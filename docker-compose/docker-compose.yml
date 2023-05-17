@@ -97,7 +97,6 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: chatgptweb-database
     restart: unless-stopped
     ports:
       - '80:80'
