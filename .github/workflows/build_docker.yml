@@ -2,7 +2,8 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches: [main]
+    tags: ["v*"]
+    # branches: [main]
   release:
     types: [created] # 表示在创建新的 Release 时触发
   workflow_dispatch:

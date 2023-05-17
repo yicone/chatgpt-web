@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, onMounted, ref } from 'vue'
 import { NAvatar, NButton, useMessage } from 'naive-ui'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore, useUserStore } from '@/store'
 import { fetchAuth } from '@/api'
 import defaultAvatar from '@/assets/avatar.jpg'
@@ -10,7 +10,6 @@ import Permission from '@/views/chat/layout/Permission.vue'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const ms = useMessage()
@@ -44,7 +43,6 @@ onMounted(async () => {
         const result = await fetchAuth('wechat', {code})
         await authStore.setToken(result.data.token)
         ms.success('success')
-        // router.go(0)
       }
       catch (error: any) {
         ms.error(error.message ?? 'error')
