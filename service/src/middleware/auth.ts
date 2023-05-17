@@ -11,8 +11,10 @@ const auth = async (req, res, next) => {
       const info = jwt.verify(token, config.siteConfig.loginSalt.trim())
       req.headers.userId = info.userId
       const user = await getUserById(info.userId)
-      if (user == null || user.status !== Status.Normal)
+      if (user == null)
         throw new Error('用户不存在 | User does not exist.')
+      else if(user.status !== Status.Normal)
+        throw new Error('用户未激活 | User is not activated.')
       else
         next()
     }

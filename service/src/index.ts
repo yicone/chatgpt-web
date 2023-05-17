@@ -13,6 +13,7 @@ import {
   clearChat,
   createChatRoom,
   createUser,
+  createUserWhenOAuth,
   deleteAllChatRooms,
   deleteChat,
   deleteChatRoom,
@@ -22,6 +23,7 @@ import {
   getChatRooms,
   getChats,
   getUser,
+  getUserWhenOAuth,
   getUserById,
   insertChat,
   insertChatUsage,
@@ -35,6 +37,7 @@ import {
 } from './storage/mongo'
 import { limiter } from './middleware/limiter'
 import { isEmail, isNotEmptyString } from './utils/is'
+import { fetchAccessToken, fetchUserInfo } from './utils/wechat'
 import { sendNoticeMail, sendResetPasswordMail, sendTestMail, sendVerifyMail, sendVerifyMailAdmin } from './utils/mail'
 import { checkUserResetPassword, checkUserVerify, checkUserVerifyAdmin, getUserResetPasswordUrl, getUserVerifyUrl, getUserVerifyUrlAdmin, md5 } from './utils/security'
 import { rootAuth } from './middleware/rootAuth'
@@ -440,6 +443,54 @@ router.post('/user-register', async (req, res) => {
       await sendVerifyMail(username, await getUserVerifyUrl(username))
       res.send({ status: 'Success', message: '注册成功, 去邮箱中验证吧 | Registration is successful, you need to go to email verification', data: null })
     }
+  }
+  catch (error) {
+    res.send({ status: 'Fail', message: error.message, data: null })
+  }
+})
+
+router.post('/user-auth', async (req, res) => {
+  try {
+    const { oauth_provider, params } = req.body as { oauth_provider: string; oauth_uid: string; params: {}; }
+
+    let oauth_token, oauth_uid
+    if (oauth_provider === 'wechat') { 
+      const jsonData = await fetchAccessToken(params.code)
+      if (jsonData.errcode) {
+        throw new Error(`${jsonData.errcode}: ${jsonData.errmsg}`)
+      }
+      oauth_uid = jsonData.openid
+      oauth_token = jsonData.access_token
+    }
+
+    let username, avatar
+    let user = await getUserWhenOAuth(oauth_provider, oauth_uid)
+    if (user != null) {
+      if (user.status === Status.AdminVerify)
+        throw new Error('请等待管理员开通 | Please wait for the admin to activate')
+      username = user.name
+    } else {
+      let wechat_unionid
+      if (oauth_provider === 'wechat') { 
+        const jsonData = await fetchUserInfo(oauth_token, oauth_uid)
+        if (jsonData.errcode) {
+          throw new Error(`${jsonData.errcode}: ${jsonData.errmsg}`)
+        }
+        username = jsonData.nickname
+        avatar = jsonData.headimgurl
+      }
+      user = await createUserWhenOAuth(username, oauth_provider, oauth_uid, oauth_token, avatar, wechat_unionid)
+    }
+
+    const config = await getCacheConfig()
+    const token = jwt.sign({
+      name: user.name,
+      avatar: user.avatar,
+      description: user.description,
+      userId: user._id,
+      root: user.name.toLowerCase() === process.env.ROOT_USER,
+    }, config.siteConfig.loginSalt.trim())
+    res.send({ status: 'Success', message: '登录成功 | Login success', data: { token } })
   }
   catch (error) {
     res.send({ status: 'Fail', message: error.message, data: null })

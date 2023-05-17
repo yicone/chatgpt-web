@@ -165,9 +165,17 @@ export async function deleteChat(roomId: number, uuid: number, inversion: boolea
 
 export async function createUser(email: string, password: string): Promise<UserInfo> {
   email = email.toLowerCase()
-  const userInfo = new UserInfo(email, password)
+  const name = email
+  const userInfo = new UserInfo({name, email, password, status: Status.PreVerify})
   if (email === process.env.ROOT_USER)
     userInfo.status = Status.Normal
+
+  await userCol.insertOne(userInfo)
+  return userInfo
+}
+
+export async function createUserWhenOAuth(username: string, oauth_provider: string, oauth_uid: string, oauth_token?: string, avatar?: string, wechat_unionid?: string) : Promise<UserInfo> {
+  const userInfo = new UserInfo({ name: username, avatar, oauth_provider, oauth_uid: oauth_uid, oauth_token, wechat_unionid, status: Status.Normal })
 
   await userCol.insertOne(userInfo)
   return userInfo
@@ -186,6 +194,10 @@ export async function updateUserPassword(userId: string, password: string) {
 export async function getUser(email: string): Promise<UserInfo> {
   email = email.toLowerCase()
   return await userCol.findOne({ email }) as UserInfo
+}
+
+export async function getUserWhenOAuth(oauth_provider: string, oauth_uid: string): Promise<UserInfo> {
+  return await userCol.findOne({ oauth_provider, oauth_uid }) as UserInfo
 }
 
 export async function getUserById(userId: string): Promise<UserInfo> {

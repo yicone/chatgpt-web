@@ -216,3 +216,13 @@ export function fetchUpdateBaseSetting<T = any>(config: ConfigState) {
     data: config,
   })
 }
+
+export function fetchAuth<T = any>(oauth_provider: string, params: {}) {
+  return post<T>({
+    url: '/user-auth',
+    data: { 
+      oauth_provider, 
+      params
+    }
+  })
+}

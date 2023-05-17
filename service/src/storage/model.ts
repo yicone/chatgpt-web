@@ -13,19 +13,21 @@ export enum Status {
 export class UserInfo {
   _id: ObjectId
   name: string
-  email: string
-  password: string
+  email?: string
+  password?: string
+  oauth_provider?: string
+  oauth_uid?: string
+  oauth_token?: string
+  wechat_unionid?: string
   status: Status
   createTime: string
   verifyTime?: string
   avatar?: string
   description?: string
   updateTime?: string
-  constructor(email: string, password: string) {
-    this.name = email
-    this.email = email
-    this.password = password
-    this.status = Status.PreVerify
+  constructor(b: Partial<UserInfo> = {}) {
+    Object.assign(this, b)
+
     this.createTime = new Date().toLocaleString()
     this.verifyTime = null
     this.updateTime = new Date().toLocaleString()
