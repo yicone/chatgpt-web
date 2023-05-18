@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { NAvatar, NButton, useMessage } from 'naive-ui'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useUserStore } from '@/store'
-import { fetchAuth } from '@/api'
+import { fetchAuth, fetchGetWeChatCodeUrl } from '@/api'
 import defaultAvatar from '@/assets/avatar.jpg'
 import { isString } from '@/utils/is'
 import Permission from '@/views/chat/layout/Permission.vue'
@@ -32,11 +32,10 @@ onMounted(async () => {
   if (isWeChat.value && !authStore.token) {
     const code = getUrlParam('code')
     if (!code) {
-      const APP_ID = 'wxfbc5dd8de2154f07'
-      const REDIRECT_URI = encodeURIComponent(document.location.origin)
-      const SCOPE = 'snsapi_userinfo'
-      const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${APP_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}&state=STATE#wechat_redirect`
-      window.location.href = url
+      const redirectUrl = encodeURIComponent(document.location.origin)
+      const scope = 'snsapi_userinfo'
+      const result = await fetchGetWeChatCodeUrl(redirectUrl, scope)
+      window.location.href = result.data.url
     } else {
       try {
         loading.value = true

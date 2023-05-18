@@ -217,6 +217,12 @@ export function fetchUpdateBaseSetting<T = any>(config: ConfigState) {
   })
 }
 
+export function fetchGetWeChatCodeUrl<T = any>(redirectUrl: string, scope: string) {
+  return get<T>({
+    url: `/wechat-code-url?redirectUrl=${redirectUrl}&scope=${scope}`,
+  })
+}
+
 export function fetchAuth<T = any>(oauth_provider: string, params: {}) {
   return post<T>({
     url: '/user-auth',

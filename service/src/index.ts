@@ -37,7 +37,7 @@ import {
 } from './storage/mongo'
 import { limiter } from './middleware/limiter'
 import { isEmail, isNotEmptyString } from './utils/is'
-import { fetchAccessToken, fetchUserInfo } from './utils/wechat'
+import { fetchAccessToken, fetchUserInfo, fetchWeChatCodeUrl } from './utils/wechat'
 import { sendNoticeMail, sendResetPasswordMail, sendTestMail, sendVerifyMail, sendVerifyMailAdmin } from './utils/mail'
 import { checkUserResetPassword, checkUserVerify, checkUserVerifyAdmin, getUserResetPasswordUrl, getUserVerifyUrl, getUserVerifyUrlAdmin, md5 } from './utils/security'
 import { rootAuth } from './middleware/rootAuth'
@@ -447,6 +447,12 @@ router.post('/user-register', async (req, res) => {
   catch (error) {
     res.send({ status: 'Fail', message: error.message, data: null })
   }
+})
+
+router.get('wechat-code-url', async (req, res) => {
+  const { redirectUrl, scope } = req.body as { redirectUrl: string; scope: string; }
+  const url = fetchWeChatCodeUrl(redirectUrl, scope)
+  res.send({ status: 'Success', message: '获取成功 | Get success', data: { url } })
 })
 
 router.post('/user-auth', async (req, res) => {
