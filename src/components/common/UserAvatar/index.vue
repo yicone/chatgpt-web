@@ -33,7 +33,7 @@ onMounted(async () => {
     const code = getUrlParam('code')
     if (!code) {
       const APP_ID = 'wxfbc5dd8de2154f07'
-      const REDIRECT_URI = encodeURIComponent('http://dev.sharegpt.vip:1002')
+      const REDIRECT_URI = encodeURIComponent(document.location.origin)
       const SCOPE = 'snsapi_userinfo'
       const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${APP_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}&state=STATE#wechat_redirect`
       window.location.href = url
