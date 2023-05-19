@@ -31,8 +31,8 @@ isWeChat.value = /micromessenger/i.test(navigator.userAgent || '')
 onMounted(async () => {
   if (isWeChat.value && !authStore.token) {
     const code = getUrlParam('code')
+    const redirectUrl = encodeURIComponent(document.location.origin)
     if (!code) {
-      const redirectUrl = encodeURIComponent(document.location.origin)
       const scope = 'snsapi_userinfo'
       const result = await fetchGetWeChatCodeUrl(redirectUrl, scope)
       window.location.href = result.data.url
@@ -42,6 +42,7 @@ onMounted(async () => {
         const result = await fetchAuth('wechat', {code})
         await authStore.setToken(result.data.token)
         ms.success('success')
+        window.location.replace('/')
       }
       catch (error: any) {
         ms.error(error.message ?? 'error')
