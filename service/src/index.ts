@@ -487,8 +487,8 @@ router.post('/user-register', async (req, res) => {
   }
 })
 
-router.get('wechat-code-url', async (req, res) => {
-  const { redirectUrl, scope } = req.body as { redirectUrl: string; scope: string; }
+router.get('/wechat-code-url', async (req, res) => {
+  const { redirectUrl, scope } = req.query as { redirectUrl: string; scope: string; }
   const url = fetchWeChatCodeUrl(redirectUrl, scope)
   res.send({ status: 'Success', message: '获取成功 | Get success', data: { url } })
 })
