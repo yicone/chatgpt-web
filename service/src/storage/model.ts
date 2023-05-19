@@ -10,6 +10,37 @@ export enum Status {
   AdminVerify = 5,
 }
 
+export enum LimitPeriod {
+  Forever = -1,
+  Day = 0,
+  Week = 1,
+  Month = 2,
+}
+
+// user chats limits in the specified time period
+export class ChatLimits {
+  dayOfPeriod?: number
+  createTime: Date
+  updateTime?: Date
+  constructor(
+    public limits: number,
+    public period: LimitPeriod
+  ) {
+    this.createTime = new Date()
+    // By period type, got dayOfPeriod from createTime
+    if (period === LimitPeriod.Week) {
+      this.dayOfPeriod = this.createTime.getDay()
+    } else if (period === LimitPeriod.Month) {
+      // got the day of month from createTime
+      this.dayOfPeriod = this.createTime.getDate()
+    } else {
+      this.dayOfPeriod = undefined
+    }
+
+    this.updateTime = new Date()
+  }
+}
+
 export class UserInfo {
   _id: ObjectId
   name: string
@@ -20,20 +51,21 @@ export class UserInfo {
   oauth_token?: string
   wechat_unionid?: string
   status: Status
-  createTime: string
+  createTime: Date
   verifyTime?: string
   avatar?: string
   description?: string
-  updateTime?: string
+  updateTime?: Date
+  chatLimits?: ChatLimits
   constructor(b: Partial<UserInfo> = {}) {
     Object.assign(this, b)
 
-    this.createTime = new Date().toLocaleString()
+    this.createTime = new Date()
     this.verifyTime = null
-    this.updateTime = new Date().toLocaleString()
+    this.updateTime = new Date()
+    this.chatLimits = new ChatLimits(+process.env.CHAT_LIMIT_DEFAULT_CHAT_COUNT, +process.env.CHAT_LIMIT_DEFAULT_PERIOD as LimitPeriod)
   }
 }
-
 export class ChatRoom {
   _id: ObjectId
   roomId: number
@@ -73,7 +105,7 @@ export class ChatInfo {
   _id: ObjectId
   roomId: number
   uuid: number
-  dateTime: number
+  dateTime: Date
   prompt: string
   response?: string
   status: Status = Status.Normal
@@ -84,7 +116,7 @@ export class ChatInfo {
     this.uuid = uuid
     this.prompt = prompt
     this.options = options
-    this.dateTime = new Date().getTime()
+    this.dateTime = new Date()
   }
 }
 
@@ -105,7 +137,7 @@ export class ChatUsage {
   completionTokens: number
   totalTokens: number
   estimated: boolean
-  dateTime: number
+  dateTime: Date
   constructor(userId: ObjectId, roomId: number, chatId: ObjectId, messageId: string, usage: UsageResponse) {
     this.userId = userId
     this.roomId = roomId
@@ -117,7 +149,7 @@ export class ChatUsage {
       this.totalTokens = usage.total_tokens
       this.estimated = usage.estimated
     }
-    this.dateTime = new Date().getTime()
+    this.dateTime = new Date()
   }
 }
 

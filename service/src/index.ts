@@ -8,6 +8,7 @@ import { chatConfig, chatReplyProcess, containsSensitiveWords, initApi, initAudi
 import { auth } from './middleware/auth'
 import { clearConfigCache, getCacheConfig, getOriginConfig } from './storage/config'
 import type { AuditConfig, ChatInfo, ChatOptions, Config, MailConfig, SiteConfig, UsageResponse, UserInfo } from './storage/model'
+import { LimitPeriod } from './storage/model'
 import { Status } from './storage/model'
 import {
   clearChat,
@@ -34,12 +35,16 @@ import {
   updateUserInfo,
   updateUserPassword,
   verifyUser,
+  getTodayChatCount,
+  getChatCountFromDate,
+  getAllChatCount,
 } from './storage/mongo'
 import { limiter } from './middleware/limiter'
 import { isEmail, isNotEmptyString } from './utils/is'
 import { fetchAccessToken, fetchUserInfo, fetchWeChatCodeUrl } from './utils/wechat'
 import { sendNoticeMail, sendResetPasswordMail, sendTestMail, sendVerifyMail, sendVerifyMailAdmin } from './utils/mail'
 import { checkUserResetPassword, checkUserVerify, checkUserVerifyAdmin, getUserResetPasswordUrl, getUserVerifyUrl, getUserVerifyUrlAdmin, md5 } from './utils/security'
+import { getPreviousWeekday, getPreviousMonthday } from './utils/period'
 import { rootAuth } from './middleware/rootAuth'
 
 dotenv.config()
@@ -306,9 +311,42 @@ router.post('/chat-process', [auth, limiter], async (req, res) => {
   let message: ChatInfo
   try {
     const config = await getCacheConfig()
+    const userId = req.headers.userId.toString()
+    const user = await getUserById(userId)
+    if (user.chatLimits) {
+      const tips = `![管理员二维码](${process.env.WECHAT_APP_MANAGER_QRCODE})请扫码联系管理员`
+
+      if (user.chatLimits.period === LimitPeriod.Day) {
+        const count = await getTodayChatCount(userId)
+        if (count >= user.chatLimits?.limits) {
+          res.send({ status: 'Fail', message: '超过每日对话次数限制 | Exceed the daily chat limit' + tips, data: null })
+          return
+        }
+      }
+      else if (user.chatLimits.period === LimitPeriod.Week) {
+        const startDate = getPreviousWeekday(user.chatLimits.dayOfPeriod)
+        const count = await getChatCountFromDate(userId, startDate)
+        if (count >= user.chatLimits?.limits) {
+          res.send({ status: 'Fail', message: '超过每周对话次数限制 | Exceed the weekly chat limit' + tips, data: null })
+          return
+        }
+      } else if (user.chatLimits.period === LimitPeriod.Month) {
+        const startDate = getPreviousMonthday(user.chatLimits.dayOfPeriod)
+        const count = await getChatCountFromDate(userId, startDate)
+        if (count >= user.chatLimits?.limits) {
+          res.send({ status: 'Fail', message: '超过每月对话次数限制 | Exceed the monthly chat limit' + tips, data: null })
+          return
+        }
+      } else if (user.chatLimits?.period === LimitPeriod.Forever) {
+        const count = await getAllChatCount(userId)
+        if (count >= user.chatLimits?.limits) {
+          res.send({ status: 'Fail', message: `超过总对话次数限制 | Exceed the total chat limit` + tips, data: null })
+          return
+        }
+      }
+    }
+
     if (config.auditConfig.enabled || config.auditConfig.customizeEnabled) {
-      const userId = req.headers.userId.toString()
-      const user = await getUserById(userId)
       if (user.email.toLowerCase() !== process.env.ROOT_USER && await containsSensitiveWords(config.auditConfig, prompt)) {
         res.send({ status: 'Fail', message: '含有敏感词 | Contains sensitive words', data: null })
         return

@@ -23,6 +23,11 @@ export async function getCacheConfig(): Promise<Config> {
   return Promise.resolve(cachedConfig)
 }
 
+/**
+ * This function retrieves configuration settings for a chatbot application, either from an existing
+ * configuration or from environment variables, and returns the resulting configuration object.
+ * @returns The function `getOriginConfig` returns a `Config` object.
+ */
 export async function getOriginConfig() {
   let config = await getConfig()
   if (config == null) {

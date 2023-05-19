@@ -11,7 +11,7 @@ const chatCol = client.db('chatgpt').collection('chat')
 const roomCol = client.db('chatgpt').collection('chat_room')
 const userCol = client.db('chatgpt').collection('user')
 const configCol = client.db('chatgpt').collection('config')
-const usageCol = client.db('chatgpt').collection('chat_usage')
+const chatUsageCol = client.db('chatgpt').collection('chat_usage')
 
 /**
  * 插入聊天信息
@@ -56,7 +56,7 @@ export async function updateChat(chatId: string, response: string, messageId: st
 
 export async function insertChatUsage(userId: ObjectId, roomId: number, chatId: ObjectId, messageId: string, usage: UsageResponse) {
   const chatUsage = new ChatUsage(userId, roomId, chatId, messageId, usage)
-  await usageCol.insertOne(chatUsage)
+  await chatUsageCol.insertOne(chatUsage)
   return chatUsage
 }
 
@@ -124,6 +124,25 @@ export async function getChats(roomId: number, lastId?: number) {
   await cursor.forEach(doc => chats.push(doc))
   chats.reverse()
   return chats
+}
+
+export async function getTodayChatCount(userId: number) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const query = { userId: new ObjectId(userId), dateTime: { $gte: today } }
+  return await chatUsageCol.countDocuments(query)
+}
+
+export async function getChatCountFromDate(userId: number, startDate: Date) {
+  // get day start time
+  startDate.setHours(0, 0, 0, 0)
+  const query = { userId: new ObjectId(userId), dateTime: { $gte: startDate } }
+  return await chatUsageCol.countDocuments(query)
+}
+
+export async function getAllChatCount(userId: number) {
+  const query = { userId: new ObjectId(userId) }
+  return await chatUsageCol.countDocuments(query)
 }
 
 export async function clearChat(roomId: number) {
